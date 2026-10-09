@@ -1,0 +1,487 @@
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+:root {
+  --page: #ececeb;
+  --surface: #f7f7f6;
+  --ink: #141412;
+  --chalk: #f1efea;
+  --muted: rgba(20, 20, 18, 0.72);
+  --chalk-muted: rgba(241, 239, 234, 0.72);
+  --rule: rgba(20, 20, 18, 0.14);
+  --chalk-rule: rgba(241, 239, 234, 0.22);
+  /* Atmospheric perspective: each ridge nearer the viewer is darker, until
+       the nearest is the page's ink. */
+  --ridge-far: #c6c6c3;
+  --ridge-mid: #7a7a76;
+  --ridge-near: #141412;
+  /* One accent: the sun the scene sets, the link's mark, the focus ring,
+       the scroll fill and ::selection. */
+  --accent: #e5322d;
+  --accent-ink: #ffffff;
+  color-scheme: light;
+}
+
+html {
+  background: var(--page);
+  scroll-behavior: auto;
+}
+
+body {
+  min-width: 320px;
+  overflow-x: hidden;
+  background: var(--page);
+  color: var(--ink);
+  font-family:
+    "Mona Sans",
+    system-ui,
+    -apple-system,
+    "Segoe UI",
+    Roboto,
+    Helvetica,
+    Arial,
+    sans-serif;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+}
+
+::selection {
+  background: var(--accent);
+  color: var(--accent-ink);
+}
+
+/* ---------------------------------------------------------------
+   The scene
+   --------------------------------------------------------------- */
+
+.hero {
+  position: relative;
+  isolation: isolate;
+  width: 100%;
+  height: 100svh;
+  min-height: 560px;
+  overflow: clip;
+  /* The sky: the page, lifting slightly toward the horizon. It is the
+       section's own background, so it is the one thing that never moves. */
+  background: linear-gradient(
+    180deg,
+    var(--page) 0%,
+    var(--page) 34%,
+    var(--surface) 62%,
+    #dcdcda 100%
+  );
+}
+
+.layer {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  will-change: transform;
+}
+
+/* --- The ridges ------------------------------------------------- */
+
+/* Each ridge is an SVG whose fill runs on to twice the viewBox height, and
+   overflow is visible, so a ridge that rises 180px never exposes the sky
+   beneath its own foot. The viewBox is sliced to the layer's width, so the
+   silhouette keeps its shape on any aspect ratio. */
+.ridge {
+  position: absolute;
+  inset: 0;
+  display: block;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+}
+
+.layer--far {
+  z-index: 1;
+  transform-origin: 50% 100%;
+}
+
+.layer--far .ridge {
+  fill: var(--ridge-far);
+}
+
+.layer--mid {
+  z-index: 2;
+}
+
+.layer--mid .ridge {
+  fill: var(--ridge-mid);
+}
+
+.layer--near {
+  z-index: 5;
+  /* Scaling from the foot pushes the ridge up as well as out. */
+  transform-origin: 50% 100%;
+}
+
+.layer--near .ridge {
+  fill: var(--ridge-near);
+}
+
+/* --- Photo mode: the photograph, its wash, and two tiles ------------ */
+
+/* A photograph that recedes and grows needs slack past the scene, or its
+   travel and its ending scale drag an edge into view. */
+.layer--photo {
+  inset: -24%;
+  z-index: 0;
+  transform-origin: 50% 55%;
+}
+
+.layer--photo img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: 50% 50%;
+}
+
+.layer--wash {
+  inset: -22%;
+  z-index: 1;
+  background:
+    linear-gradient(
+      0deg,
+      rgba(20, 20, 18, 0.78) 0%,
+      rgba(20, 20, 18, 0.5) 22%,
+      rgba(20, 20, 18, 0) 44%
+    ),
+    linear-gradient(
+      90deg,
+      rgba(236, 236, 235, 0.9) 0%,
+      rgba(236, 236, 235, 0.72) 30%,
+      rgba(236, 236, 235, 0.2) 58%,
+      rgba(236, 236, 235, 0) 78%
+    ),
+    linear-gradient(180deg, rgba(236, 236, 235, 0.55) 0%, rgba(236, 236, 235, 0) 30%);
+}
+
+.layer--tile {
+  z-index: 5;
+}
+
+.tile {
+  position: absolute;
+  width: clamp(150px, 19vw, 250px);
+  aspect-ratio: 7 / 9;
+  overflow: hidden;
+  border-radius: 6px;
+  box-shadow:
+    0 1px 0 rgba(20, 20, 18, 0.12),
+    0 24px 48px -20px rgba(20, 20, 18, 0.45);
+}
+
+.tile img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.layer--tile-a .tile {
+  top: 44%;
+  left: 67%;
+}
+
+.layer--tile-b .tile {
+  top: 58%;
+  left: 42%;
+}
+
+/* Which set paints. Both sets are always in the scene and always animated;
+   the switch only decides which one is visible. */
+.hero[data-mode="illustration"] .layer--photo,
+.hero[data-mode="illustration"] .layer--wash,
+.hero[data-mode="illustration"] .layer--tile,
+.hero[data-mode="photo"] .layer--sun,
+.hero[data-mode="photo"] .layer--far,
+.hero[data-mode="photo"] .layer--mid,
+.hero[data-mode="photo"] .layer--mist,
+.hero[data-mode="photo"] .layer--near {
+  display: none;
+}
+
+/* --- The sun ---------------------------------------------------- */
+
+.layer--sun {
+  z-index: 0;
+}
+
+.sun {
+  position: absolute;
+  top: 12%;
+  left: 61%;
+  width: clamp(88px, 12vw, 168px);
+  height: clamp(88px, 12vw, 168px);
+  border-radius: 50%;
+  background: var(--accent);
+}
+
+/* --- The mist --------------------------------------------------- */
+
+/* A page-coloured band across the valley floor. It is a gradient, not a
+   filter, so it composites for free while it travels. */
+.layer--mist {
+  top: 48%;
+  bottom: 14%;
+  z-index: 3;
+  background: linear-gradient(
+    180deg,
+    rgba(236, 236, 235, 0) 0%,
+    rgba(236, 236, 235, 0.85) 38%,
+    rgba(236, 236, 235, 0.85) 62%,
+    rgba(236, 236, 235, 0) 100%
+  );
+}
+
+/* --- The headline, inside the stack ------------------------------ */
+
+.layer--headline {
+  z-index: 4;
+  padding: clamp(4.5rem, 12vh, 7.5rem) clamp(1.5rem, 6vw, 6rem) 0;
+}
+
+.hero-title {
+  font-size: clamp(4.4rem, 11.4vw, 10.5rem);
+  font-weight: 700;
+  letter-spacing: -0.045em;
+  line-height: 0.88;
+  text-wrap: balance;
+}
+
+/* --- The deck, in front of the stack ------------------------------ */
+
+/* The deck stands on the near ridge, so it is set in chalk. */
+.layer--deck {
+  z-index: 6;
+  display: grid;
+  align-content: end;
+  padding: 0 clamp(1.5rem, 6vw, 6rem) clamp(2.75rem, 7vh, 4rem);
+  color: var(--chalk);
+}
+
+.deck {
+  max-width: 22rem;
+  pointer-events: auto;
+}
+
+.hero-lede {
+  color: var(--chalk-muted);
+  font-size: clamp(0.95rem, 1.05vw, 1.05rem);
+  font-weight: 500;
+  line-height: 1.55;
+  text-wrap: pretty;
+}
+
+.hero-link {
+  display: inline-block;
+  margin-top: 1.1rem;
+  padding-bottom: 2px;
+  border-bottom: 1px solid var(--accent);
+  color: var(--chalk);
+  font-size: 0.95rem;
+  font-weight: 600;
+  text-decoration: none;
+  transition:
+    border-color 0.2s ease,
+    color 0.2s ease;
+}
+
+.hero-link:hover,
+.hero-link:focus-visible {
+  border-color: var(--chalk);
+}
+
+.hero-link:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 4px;
+}
+
+/* --- The switch ------------------------------------------------- */
+
+.mode-switch {
+  position: absolute;
+  top: clamp(1.25rem, 3vw, 2rem);
+  right: clamp(1.5rem, 6vw, 6rem);
+  z-index: 8;
+  display: inline-flex;
+  padding: 3px;
+  border: 1px solid var(--rule);
+  border-radius: 999px;
+  background: rgba(247, 247, 246, 0.82);
+  backdrop-filter: blur(8px);
+}
+
+.mode-switch button {
+  padding: 0.4rem 0.9rem;
+  border: 0;
+  border-radius: 999px;
+  background: transparent;
+  color: var(--muted);
+  font: inherit;
+  font-size: 0.8rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition:
+    background-color 0.2s ease,
+    color 0.2s ease;
+}
+
+.mode-switch button[aria-pressed="true"] {
+  background: var(--ink);
+  color: var(--chalk);
+}
+
+.mode-switch button:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+/* --- The one cue, and the line the timeline fills --------------- */
+
+.scroll-cue {
+  position: absolute;
+  right: clamp(1.5rem, 6vw, 6rem);
+  bottom: clamp(1.5rem, 3.4vw, 2.4rem);
+  z-index: 7;
+  display: flex;
+  gap: 0.85rem;
+  align-items: center;
+  color: var(--chalk-muted);
+  font-size: 0.8rem;
+  font-weight: 500;
+  pointer-events: none;
+}
+
+.scroll-cue__track {
+  display: block;
+  width: min(140px, 24vw);
+  height: 1px;
+  overflow: hidden;
+  background: var(--chalk-rule);
+}
+
+.scroll-cue__track span {
+  display: block;
+  width: 100%;
+  height: 100%;
+  transform: scaleX(0);
+  transform-origin: left;
+  background: var(--accent);
+}
+
+/* --- What the hero releases into -------------------------------- */
+
+.after {
+  padding: clamp(3.5rem, 11vh, 7rem) clamp(1.5rem, 6vw, 6rem);
+  background: var(--ridge-near);
+  color: var(--chalk);
+}
+
+.after h2 {
+  font-size: clamp(1.5rem, 2.6vw, 2.1rem);
+  font-weight: 600;
+  letter-spacing: -0.025em;
+  line-height: 1.15;
+}
+
+.after p {
+  max-width: 34rem;
+  margin-top: 0.9rem;
+  color: var(--chalk-muted);
+  font-size: 1rem;
+  line-height: 1.7;
+}
+
+/* ---------------------------------------------------------------
+   Responsive
+   --------------------------------------------------------------- */
+
+@media (max-width: 768px) {
+  .hero {
+    min-height: 600px;
+  }
+
+  .sun {
+    top: 27%;
+    left: 60%;
+  }
+
+  .layer--headline {
+    padding-top: 20%;
+  }
+
+  .hero-title {
+    font-size: clamp(4.2rem, 19vw, 5.6rem);
+  }
+
+  .layer--mist {
+    top: 54%;
+    bottom: 18%;
+  }
+
+  .layer--deck {
+    padding-bottom: 5rem;
+  }
+
+  .layer--tile-a .tile {
+    top: 40%;
+    left: 54%;
+  }
+
+  .layer--tile-b .tile {
+    top: 50%;
+    left: 18%;
+  }
+
+  .mode-switch {
+    right: 1.5rem;
+  }
+
+  .scroll-cue {
+    right: 1.5rem;
+  }
+}
+
+@media (max-height: 620px) and (min-width: 769px) {
+  .hero {
+    min-height: 480px;
+  }
+
+  .hero-title {
+    font-size: clamp(3.6rem, 9.5vw, 7rem);
+  }
+}
+
+/* ---------------------------------------------------------------
+   Reduced motion: no pin, no travel, the composition stays whole
+   --------------------------------------------------------------- */
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    scroll-behavior: auto !important;
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+
+  [data-parallax-speed] {
+    transform: none !important;
+    filter: none !important;
+    opacity: 1 !important;
+    visibility: visible !important;
+    will-change: auto;
+  }
+
+  .scroll-cue {
+    display: none;
+  }
+}
